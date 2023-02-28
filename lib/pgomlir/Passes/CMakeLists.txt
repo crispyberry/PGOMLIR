@@ -9,4 +9,6 @@ add_mlir_dialect_library(MLIRPGOTransforms
   LINK_LIBS PUBLIC
   MLIRIR
   MLIRSCFDialect
+  MLIRArithDialect
+  MLIRSupport
 )
