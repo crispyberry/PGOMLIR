@@ -41,9 +41,60 @@ TripCountAttrSCFPattern::matchAndRewrite(scf::ForOp forOp,
   auto lbCstOp = forOp.getLowerBound().getDefiningOp<arith::ConstantIndexOp>();
   auto ubCstOp = forOp.getUpperBound().getDefiningOp<arith::ConstantIndexOp>();
   auto stepCstOp = forOp.getStep().getDefiningOp<arith::ConstantIndexOp>();
-  if (!lbCstOp || !ubCstOp || !stepCstOp || lbCstOp.value() < 0 ||
-      ubCstOp.value() < 0 || stepCstOp.value() < 0) {
-    auto tripCountAttr = StringAttr::get(forOp.getContext(), "unknown");
+
+  if (!lbCstOp && !ubCstOp && !stepCstOp) {
+    auto tripCountAttr = StringAttr::get(forOp.getContext(), std::string("unknown") );
+    rewriter.updateRootInPlace(
+        forOp, [&]() { forOp->setAttr("tripCount", tripCountAttr); });
+    return failure();
+  } else if (lbCstOp && ubCstOp && !stepCstOp) {
+    auto tripCountAttr =
+        StringAttr::get(forOp.getContext(),
+                        llvm::utostr(ubCstOp.value()) + std::string("-")  +
+                            llvm::utostr(lbCstOp.value()) + std::string("/")  + std::string("unknown") );
+    rewriter.updateRootInPlace(
+        forOp, [&]() { forOp->setAttr("tripCount", tripCountAttr); });
+    return failure();
+  } else if (!lbCstOp && ubCstOp && stepCstOp) {
+    auto tripCountAttr = StringAttr::get(
+        forOp.getContext(), llvm::utostr(ubCstOp.value()) + std::string("-")  + std::string("unknown")  +
+                                std::string("/")  + llvm::utostr(stepCstOp.value()));
+    rewriter.updateRootInPlace(
+        forOp, [&]() { forOp->setAttr("tripCount", tripCountAttr); });
+    return failure();
+  } else if (lbCstOp && !ubCstOp && stepCstOp) {
+    auto tripCountAttr = StringAttr::get(
+        forOp.getContext(), std::string("unknown")  + std::string("-")  + llvm::utostr(lbCstOp.value()) +
+                                std::string("/")  + llvm::utostr(stepCstOp.value()));
+    rewriter.updateRootInPlace(
+        forOp, [&]() { forOp->setAttr("tripCount", tripCountAttr); });
+    return failure();
+  } else if (!lbCstOp && !ubCstOp && stepCstOp) {
+    auto tripCountAttr = StringAttr::get(
+        forOp.getContext(), std::string("unknown")  + std::string("/")  + llvm::utostr(stepCstOp.value()));
+    rewriter.updateRootInPlace(
+        forOp, [&]() { forOp->setAttr("tripCount", tripCountAttr); });
+    return failure();
+  } else if (lbCstOp && !ubCstOp && !stepCstOp) {
+    auto tripCountAttr = StringAttr::get(
+        forOp.getContext(),
+        std::string("unknown")  + std::string("-")  + llvm::utostr(lbCstOp.value()) + std::string("/")  + std::string("unknown") );
+    rewriter.updateRootInPlace(
+        forOp, [&]() { forOp->setAttr("tripCount", tripCountAttr); });
+    return failure();
+  } else if (!lbCstOp && ubCstOp && !stepCstOp) {
+    auto tripCountAttr = StringAttr::get(forOp.getContext(),
+                                         llvm::utostr(ubCstOp.value()) + std::string("-")  +
+                                             std::string("unknown")  + std::string("/")  + std::string("unknown") );
+    rewriter.updateRootInPlace(
+        forOp, [&]() { forOp->setAttr("tripCount", tripCountAttr); });
+    return failure();
+  } else if (lbCstOp.value() < 0 || ubCstOp.value() < 0 ||
+             stepCstOp.value() < 0) {
+    auto tripCountAttr = StringAttr::get(
+        forOp.getContext(), llvm::utostr(ubCstOp.value()) + std::string("-")  +
+                                llvm::utostr(lbCstOp.value()) + std::string("/")  +
+                                llvm::utostr(stepCstOp.value()));
     rewriter.updateRootInPlace(
         forOp, [&]() { forOp->setAttr("tripCount", tripCountAttr); });
     return failure();
