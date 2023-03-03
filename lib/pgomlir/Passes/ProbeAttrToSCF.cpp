@@ -58,6 +58,10 @@ TripCountAttrSCFPattern::matchAndRewrite(scf::ForOp forOp,
     } else {
       // If there is no defining op, the Value is necessarily a Block
       // argument.
+      // TODO:This demo part is for dynamic step value, mayebe later we don't have
+      // to add this information as attribute. Just use this information for
+      // analysis.
+      // Or just add dynamic information as unknown, and deal with unknown by other pass?
       auto blockArg = forOp.getStep().cast<BlockArgument>();
       stepName = "blockArgIndex:" + llvm::utostr(blockArg.getArgNumber());
     }
