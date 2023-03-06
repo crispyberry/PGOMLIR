@@ -9,7 +9,7 @@
 #include "mlir/Transforms/GreedyPatternRewriteDriver.h"
 
 #include "pgomlir/Passes/Passes.h"
-#include "pgomlir/Utilities/GetConstant.h"
+#include "pgomlir/Utilities/GetConstantVerify.h"
 
 using namespace mlir;
 using namespace pgomlir;
