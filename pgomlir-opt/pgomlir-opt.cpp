@@ -23,23 +23,22 @@ using namespace mlir;
 using namespace pgomlir;
 
 static cl::opt<std::string> inputFilename(llvm::cl::Positional,
-                                         llvm::cl::desc("<input file>"),
-                                         llvm::cl::init("-"),
-                                         llvm::cl::value_desc("filename"));
+                                          llvm::cl::desc("<input file>"),
+                                          llvm::cl::init("-"),
+                                          llvm::cl::value_desc("filename"));
 static cl::opt<std::string> outputFilename("o",
-                                          llvm::cl::desc("Output filename"),
-                                          llvm::cl::value_desc("filename"),
-                                          llvm::cl::init("-"));
+                                           llvm::cl::desc("Output filename"),
+                                           llvm::cl::value_desc("filename"),
+                                           llvm::cl::init("-"));
 static cl::opt<bool>
-    ProbeAttrToSCFPass("probeattr-to-scf-pass", cl::init(true),
-                       cl::desc("Turn on probeattr-to-scf-pass"));
+    ProbeAttrToSCFPass("probe-attr-to-scf-pass", cl::init(true),
+                       cl::desc("Turn on probe-attr-to-scf-pass"));
 
 int main(int argc, char **argv) {
   // Register all MLIR dialects and passes.
 
   mlir::registerAllPasses();
 
-  // Parse command line arguments.
   mlir::DialectRegistry registry;
 
   mlir::registerAllDialects(registry);
@@ -51,13 +50,13 @@ int main(int argc, char **argv) {
   mlir::registerAsmPrinterCLOptions();
   mlir::registerMLIRContextCLOptions();
   mlir::registerPassManagerCLOptions();
-
+  // Parse command line arguments.
   cl::ParseCommandLineOptions(argc, argv, "\n");
 
   llvm::errs() << inputFilename << "!\n";
   llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> fileOrErr =
       llvm::MemoryBuffer::getFileOrSTDIN(inputFilename);
-  llvm::errs() << "LOADed\n";
+  llvm::errs() << "Loaded\n";
   if (std::error_code ec = fileOrErr.getError()) {
     llvm::errs() << "Could not open input file: " << ec.message() << "\n";
     return -1;
@@ -75,7 +74,6 @@ int main(int argc, char **argv) {
 
   // Add the custom attribute pass to the pass manager.
   if (ProbeAttrToSCFPass) {
-    llvm::errs() << "In\n";
     pm.addPass(mlir::pgomlir::createProbeAttrToSCFPass());
 
     // Run the pass on the module.
