@@ -30,6 +30,13 @@ struct ComparisonExprAttrSCFPattern : public OpRewritePattern<scf::IfOp> {
                                 PatternRewriter &rewriter) const override;
 };
 
+// struct SelectExprAttrArithPattern : public OpRewritePattern<arith::SelectOp> {
+//   using OpRewritePattern::OpRewritePattern;
+
+//   LogicalResult matchAndRewrite(arith::SelectOp selectOp,
+//                                 PatternRewriter &rewriter) const override;
+// };
+
 struct ProbeAttrToSCFPass
     : public PassWrapper<ProbeAttrToSCFPass, OperationPass<>> {
   void runOnOperation() override;
@@ -45,12 +52,11 @@ TripCountAttrSCFPattern::matchAndRewrite(scf::ForOp forOp,
   // Firstly assume that bounds for loop are defined well by operations within
   // arith.
   std::string upper = getConstantVerify(forOp.getUpperBound());
-  std::string  lower = getConstantVerify(forOp.getLowerBound());
-  std::string  step = getConstantVerify(forOp.getStep());
+  std::string lower = getConstantVerify(forOp.getLowerBound());
+  std::string step = getConstantVerify(forOp.getStep());
 
-  std::string trip = upper+","+lower+","+step;
-  auto tripCountAttr =
-      StringAttr::get(forOp.getContext(), trip);
+  std::string trip = upper + "," + lower + "," + step;
+  auto tripCountAttr = StringAttr::get(forOp.getContext(), trip);
 
   rewriter.updateRootInPlace(
       forOp, [&]() { forOp->setAttr("tripCount", tripCountAttr); });
@@ -65,27 +71,53 @@ TripCountAttrSCFPattern::matchAndRewrite(scf::ForOp forOp,
 LogicalResult
 ComparisonExprAttrSCFPattern::matchAndRewrite(scf::IfOp ifOp,
                                               PatternRewriter &rewriter) const {
-  if (ifOp->getAttrOfType<StringAttr>("comparisonExpr"))
+  if (ifOp->getAttrOfType<StringAttr>("ifExpr"))
     return failure();
-  auto cmpiOp = ifOp.getCondition().getDefiningOp<arith::CmpIOp>();
-  auto predicate = arith::stringifyEnum(cmpiOp.getPredicate()).str();
-  std::string lhsvalue = getConstantVerify(cmpiOp.getLhs());
-  std::string rhsvalue = getConstantVerify(cmpiOp.getRhs());
+  // Deal with CmpFOp ...
+  auto cmpIOp = ifOp.getCondition().getDefiningOp<arith::CmpIOp>();
+  auto predicate = arith::stringifyEnum(cmpIOp.getPredicate()).str();
+  std::string lhsvalue = getConstantVerify(cmpIOp.getLhs());
+  std::string rhsvalue = getConstantVerify(cmpIOp.getRhs());
   // TODO: Update this code by designing a util::getDefiningWithContol to
   // identify the data with control flow.
 
-  std::string expr = predicate + "," + lhsvalue + "," + rhsvalue;
-  auto comparisonExprAttr = StringAttr::get(ifOp.getContext(), expr);
+  std::string expr = lhsvalue + " "+predicate + " "+rhsvalue;
+  auto ifExprAttr = StringAttr::get(ifOp.getContext(), expr);
   rewriter.updateRootInPlace(
-      ifOp, [&]() { ifOp->setAttr("comparisonExpr", comparisonExprAttr); });
-  return failure();
+      ifOp, [&]() { ifOp->setAttr("ifExpr", ifExprAttr); });
+  return success();
 }
+
+// LogicalResult
+// SelectExprAttrArithPattern::matchAndRewrite(arith::SelectOp selectOp,
+//                                             PatternRewriter &rewriter) const {
+//   if (selectOp->getAttrOfType<StringAttr>("selectExpr"))
+//     return failure();
+//   auto condition = selectOp.getCondition();
+//   auto cmpIOp = condition.getDefiningOp<arith::CmpIOp>();
+//   auto predicate = arith::stringifyEnum(cmpIOp.getPredicate()).str();
+//   std::string lhsvalue = getConstantVerify(cmpIOp.getLhs());
+//   std::string rhsvalue = getConstantVerify(cmpIOp.getRhs());
+
+//   auto trueOperandValue = selectOp.getTrueValue();
+//   auto falseOperandValue = selectOp.getFalseValue();
+//   std::string truevalue = getConstantVerify(trueOperandValue);
+//   std::string falsevalue = getConstantVerify(falseOperandValue);
+
+//   std::string expr = predicate + "," + lhsvalue + "," + rhsvalue + ":" +
+//                      truevalue +","+ falsevalue;
+//   auto selectExprAttr = StringAttr::get(selectOp.getContext(), expr);
+//   rewriter.updateRootInPlace(
+//       selectOp, [&]() { selectOp->setAttr("selectExpr", selectExprAttr); });
+//   return success();
+// }
 
 void ProbeAttrToSCFPass::runOnOperation() {
 
   RewritePatternSet patterns(&getContext());
   patterns.add<TripCountAttrSCFPattern>(&getContext());
   patterns.add<ComparisonExprAttrSCFPattern>(&getContext());
+  //patterns.add<SelectExprAttrArithPattern>(&getContext());
 
   if (failed(
           applyPatternsAndFoldGreedily(getOperation(), std::move(patterns)))) {
