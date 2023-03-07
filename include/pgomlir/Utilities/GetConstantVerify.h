@@ -115,20 +115,21 @@ std::string getConstantVerify(Value value) {
     }
   }
   if (auto blockArg = value.cast<BlockArgument>()) {
-    std::string parentOp;
-    std::string iterExpr;
-    std::string yiledExpr;
+    std::string parentOp = "";
+    std::string ivExpr = "";
+    std::string iterExpr = "";
+    std::string yiledExpr = "";
 
     auto posInArg = blockArg.getArgNumber();
     if (isa<func::FuncOp>(blockArg.getOwner()->getParentOp())) {
       parentOp = std::string("Func");
-      iterExpr = "";
     } else if (isa<scf::ForOp>(blockArg.getOwner()->getParentOp())) {
       parentOp = std::string("For");
 
       auto forOp = llvm::dyn_cast_or_null<scf::ForOp>(
           blockArg.getOwner()->getParentOp());
-      if (posInArg != 0) { // if it is in iter_args.
+        llvm::errs()<<"POS:"<<posInArg<<"\n";
+      if (posInArg != 0) { // If it is in iter_args.
         auto iterInitValue = forOp.getInitArgs()[posInArg - 1];
         iterExpr = "(" + getConstantVerify(iterInitValue) + ")";
         // scf.for binds iter_args with scf.yield, so we must take scf.yield
@@ -139,8 +140,13 @@ std::string getConstantVerify(Value value) {
           yiledExpr = "<-yd" + getYieldVerify(yieledValue);
         }
       }
+      else{ // If it is induction variable.TODO: iv can be changed by some branches.
+        llvm::errs()<<"iv!"<<"\n";
+        auto ivInitValue = forOp.getLowerBound();
+        ivExpr = "("+ getConstantVerify(ivInitValue)+")";
+      }
     }
-    return std::string("Index" + parentOp + std::to_string(posInArg) +
+    return std::string("Index" + parentOp + std::to_string(posInArg) +ivExpr+
                        iterExpr + yiledExpr);
   }
 
