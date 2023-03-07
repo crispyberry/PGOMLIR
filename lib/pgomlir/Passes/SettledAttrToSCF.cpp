@@ -9,7 +9,7 @@
 #include "mlir/Transforms/GreedyPatternRewriteDriver.h"
 
 #include "pgomlir/Passes/Passes.h"
-#include "pgomlir/Utilities/GetConstantVerify.h"
+#include "pgomlir/Utilities/GetSettledVerify.h"
 
 using namespace mlir;
 using namespace pgomlir;
@@ -37,8 +37,8 @@ struct ComparisonExprAttrSCFPattern : public OpRewritePattern<scf::IfOp> {
 //                                 PatternRewriter &rewriter) const override;
 // };
 
-struct ProbeAttrToSCFPass
-    : public PassWrapper<ProbeAttrToSCFPass, OperationPass<>> {
+struct SettledAttrToSCFPass
+    : public PassWrapper<SettledAttrToSCFPass, OperationPass<>> {
   void runOnOperation() override;
 };
 } // namespace
@@ -51,9 +51,9 @@ TripCountAttrSCFPattern::matchAndRewrite(scf::ForOp forOp,
 
   // Firstly assume that bounds for loop are defined well by operations within
   // arith.
-  std::string upper = getConstantVerify(forOp.getUpperBound());
-  std::string lower = getConstantVerify(forOp.getLowerBound());
-  std::string step = getConstantVerify(forOp.getStep());
+  std::string upper = getSettledVerify(forOp.getUpperBound());
+  std::string lower = getSettledVerify(forOp.getLowerBound());
+  std::string step = getSettledVerify(forOp.getStep());
 
   std::string trip = upper + "," + lower + "," + step;
   auto tripCountAttr = StringAttr::get(forOp.getContext(), trip);
@@ -76,8 +76,8 @@ ComparisonExprAttrSCFPattern::matchAndRewrite(scf::IfOp ifOp,
   // Deal with CmpFOp ...
   auto cmpIOp = ifOp.getCondition().getDefiningOp<arith::CmpIOp>();
   auto predicate = arith::stringifyEnum(cmpIOp.getPredicate()).str();
-  std::string lhsvalue = getConstantVerify(cmpIOp.getLhs());
-  std::string rhsvalue = getConstantVerify(cmpIOp.getRhs());
+  std::string lhsvalue = getSettledVerify(cmpIOp.getLhs());
+  std::string rhsvalue = getSettledVerify(cmpIOp.getRhs());
   // TODO: Update this code by designing a util::getDefiningWithContol to
   // identify the data with control flow.
 
@@ -96,13 +96,13 @@ ComparisonExprAttrSCFPattern::matchAndRewrite(scf::IfOp ifOp,
 //   auto condition = selectOp.getCondition();
 //   auto cmpIOp = condition.getDefiningOp<arith::CmpIOp>();
 //   auto predicate = arith::stringifyEnum(cmpIOp.getPredicate()).str();
-//   std::string lhsvalue = getConstantVerify(cmpIOp.getLhs());
-//   std::string rhsvalue = getConstantVerify(cmpIOp.getRhs());
+//   std::string lhsvalue = getSettledVerify(cmpIOp.getLhs());
+//   std::string rhsvalue = getSettledVerify(cmpIOp.getRhs());
 
 //   auto trueOperandValue = selectOp.getTrueValue();
 //   auto falseOperandValue = selectOp.getFalseValue();
-//   std::string truevalue = getConstantVerify(trueOperandValue);
-//   std::string falsevalue = getConstantVerify(falseOperandValue);
+//   std::string truevalue = getSettledVerify(trueOperandValue);
+//   std::string falsevalue = getSettledVerify(falseOperandValue);
 
 //   std::string expr = predicate + "," + lhsvalue + "," + rhsvalue + ":" +
 //                      truevalue +","+ falsevalue;
@@ -112,7 +112,7 @@ ComparisonExprAttrSCFPattern::matchAndRewrite(scf::IfOp ifOp,
 //   return success();
 // }
 
-void ProbeAttrToSCFPass::runOnOperation() {
+void SettledAttrToSCFPass::runOnOperation() {
 
   RewritePatternSet patterns(&getContext());
   patterns.add<TripCountAttrSCFPattern>(&getContext());
@@ -124,6 +124,6 @@ void ProbeAttrToSCFPass::runOnOperation() {
     signalPassFailure();
   }
 }
-std::unique_ptr<Pass> mlir::pgomlir::createProbeAttrToSCFPass() {
-  return std::make_unique<ProbeAttrToSCFPass>();
+std::unique_ptr<Pass> mlir::pgomlir::createSettledAttrToSCFPass() {
+  return std::make_unique<SettledAttrToSCFPass>();
 }

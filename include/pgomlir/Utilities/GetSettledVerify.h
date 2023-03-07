@@ -1,5 +1,5 @@
-#ifndef GET_CONSTANT_H
-#define GET_CONSTANT_H
+#ifndef GET_SETTLED_H
+#define GET_SETTLED_H
 
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
@@ -92,7 +92,7 @@ std::string getYieldVerify(Value value) {
   return std::string("unknow");
 }
 
-std::string getConstantVerify(Value value) {
+std::string getSettledVerify(Value value) {
   llvm::errs() << "not yiled: " << value << "\n";
   while (auto producer = value.getDefiningOp()) {
     if (auto cosntantIndexOp =
@@ -108,7 +108,7 @@ std::string getConstantVerify(Value value) {
                    llvm::dyn_cast_or_null<arith::AddIOp>(producer)) {
       auto left = constantAddIOp.getLhs();
       auto right = constantAddIOp.getRhs();
-      return getConstantVerify(left) + "+" + getConstantVerify(right);
+      return getSettledVerify(left) + "+" + getSettledVerify(right);
     } else { // TODO: Further we should deal with other binary op like AddFOP
              // DivOP ...
       return std::string("unknow");
@@ -131,7 +131,7 @@ std::string getConstantVerify(Value value) {
         llvm::errs()<<"POS:"<<posInArg<<"\n";
       if (posInArg != 0) { // If it is in iter_args.
         auto iterInitValue = forOp.getInitArgs()[posInArg - 1];
-        iterExpr = "(" + getConstantVerify(iterInitValue) + ")";
+        iterExpr = "(" + getSettledVerify(iterInitValue) + ")";
         // scf.for binds iter_args with scf.yield, so we must take scf.yield
         // into consideration.
         if (auto yieldOpInFor = dyn_cast_or_null<scf::YieldOp>(
@@ -143,7 +143,7 @@ std::string getConstantVerify(Value value) {
       else{ // If it is induction variable.TODO: iv can be changed by some branches.
         llvm::errs()<<"iv!"<<"\n";
         auto ivInitValue = forOp.getLowerBound();
-        ivExpr = "("+ getConstantVerify(ivInitValue)+")";
+        ivExpr = "("+ getSettledVerify(ivInitValue)+")";
       }
     }
     return std::string("Index" + parentOp + std::to_string(posInArg) +ivExpr+
@@ -153,4 +153,4 @@ std::string getConstantVerify(Value value) {
   return std::string("unknow");
 }
 
-#endif // GET_CONSTANT_H
+#endif // GET_SETTLED_H

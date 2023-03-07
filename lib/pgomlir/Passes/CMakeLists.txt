@@ -1,5 +1,5 @@
 add_mlir_dialect_library(MLIRPGOTransforms
-  ProbeAttrToSCF.cpp
+  SettledAttrToSCF.cpp
 
   ${PROJECT_SOURCE_DIR}/include/pgomlir/Passes
 

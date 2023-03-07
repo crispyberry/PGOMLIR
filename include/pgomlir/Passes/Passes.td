@@ -3,8 +3,8 @@
 
 include "mlir/Pass/PassBase.td"
 
-def ProbeAttrToSCFPass : Pass<"probeattr-to-scf-pass"> {
-  let summary = "Add probe atrributes to SCF operations";
-  let constructor = "mlir::pgomlir::createProbeAttrToSCFPass()";
+def SettledAttrToSCFPass : Pass<"settled-attr-to-scf-pass"> {
+  let summary = "Add settled information atrributes to SCF operations";
+  let constructor = "mlir::pgomlir::createSettledAttrToSCFPass()";
 }
 #endif // PGO_MLIR_PASSES_H

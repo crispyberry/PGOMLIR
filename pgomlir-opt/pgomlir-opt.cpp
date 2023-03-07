@@ -31,8 +31,8 @@ static cl::opt<std::string> outputFilename("o",
                                            llvm::cl::value_desc("filename"),
                                            llvm::cl::init("-"));
 static cl::opt<bool>
-    ProbeAttrToSCFPass("probe-attr-to-scf-pass", cl::init(true),
-                       cl::desc("Turn on probe-attr-to-scf-pass"));
+    SettledAttrToSCFPass("settled-attr-to-scf-pass", cl::init(true),
+                       cl::desc("Turn on settled-attr-to-scf-pass"));
 
 int main(int argc, char **argv) {
   // Register all MLIR dialects and passes.
@@ -73,8 +73,8 @@ int main(int argc, char **argv) {
   }
 
   // Add the custom attribute pass to the pass manager.
-  if (ProbeAttrToSCFPass) {
-    pm.addPass(mlir::pgomlir::createProbeAttrToSCFPass());
+  if (SettledAttrToSCFPass) {
+    pm.addPass(mlir::pgomlir::createSettledAttrToSCFPass());
 
     // Run the pass on the module.
     if (failed(pm.run(*module))) {
@@ -95,7 +95,7 @@ int main(int argc, char **argv) {
 }
 
 // static cl::opt<bool>
-//     ProbeAttrToSCFPass("probeattr-to-scf-pass", cl::init(true),
+//     SettledAttrToSCFPass("probeattr-to-scf-pass", cl::init(true),
 //                        cl::desc("Turn on probeattr-to-scf-pass"));
 
 // static cl::opt<std::string> inputFilename(cl::Positional,
@@ -136,8 +136,8 @@ int main(int argc, char **argv) {
 //   cl::ParseCommandLineOptions(argc, argv, "pgomlir!\n");
 
 //   mlir::PassManager pm(module.get()->getName());
-//   if (ProbeAttrToSCFPass) {
-//     pm.addPass(mlir::pgomlir::createProbeAttrToSCFPass());
+//   if (SettledAttrToSCFPass) {
+//     pm.addPass(mlir::pgomlir::createSettledAttrToSCFPass());
 //     module->dump();
 //   }
 //   return 0;
