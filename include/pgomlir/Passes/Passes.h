@@ -9,7 +9,7 @@ namespace mlir {
 class Pass;
 namespace pgomlir {
 std::unique_ptr<Pass> createSettledAttrToSCFPass();
-//std::unique_ptr<Pass> createBranchProbabilityInfoPass();
+std::unique_ptr<Pass> createBranchProbabilityInfoPass();
 } // namespace pgomlir
 } // namespace mlir
 

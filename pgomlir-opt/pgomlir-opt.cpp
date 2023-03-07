@@ -34,6 +34,10 @@ static cl::opt<bool>
     SettledAttrToSCFPass("settled-attr-to-scf-pass", cl::init(true),
                        cl::desc("Turn on settled-attr-to-scf-pass"));
 
+static cl::opt<bool>
+    BranchProbabilityInfoPass("branch-prob-info-pass", cl::init(true),
+                       cl::desc("Turn on branch-prob-info-pass"));
+
 int main(int argc, char **argv) {
   // Register all MLIR dialects and passes.
 
@@ -82,6 +86,16 @@ int main(int argc, char **argv) {
       return 1;
     }
   }
+
+  if(BranchProbabilityInfoPass){
+    pm.addPass(mlir::pgomlir::createSettledAttrToSCFPass());
+    pm.addPass(mlir::pgomlir::createBranchProbabilityInfoPass());
+
+    if (failed(pm.run(*module))) {
+      llvm::errs() << "Error running pass\n";
+      return 1;
+    }
+  }
   // Write the output file.
   std::error_code error;
   llvm::raw_fd_ostream output(outputFilename, error, llvm::sys::fs::OF_Text);
@@ -93,52 +107,3 @@ int main(int argc, char **argv) {
 
   return 0;
 }
-
-// static cl::opt<bool>
-//     SettledAttrToSCFPass("probeattr-to-scf-pass", cl::init(true),
-//                        cl::desc("Turn on probeattr-to-scf-pass"));
-
-// static cl::opt<std::string> inputFilename(cl::Positional,
-//                                           cl::desc("<input .mlir>"),
-//                                           cl::init("-"),
-//                                           cl::value_desc("filename"));
-
-// int loadMLIR(llvm::SourceMgr &sourceMgr, mlir::MLIRContext &context,
-//              mlir::OwningOpRef<mlir::ModuleOp> &module) {
-
-//   // Otherwise, the input is '.mlir'.
-//   llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> fileOrErr =
-//       llvm::MemoryBuffer::getFileOrSTDIN(inputFilename);
-//   if (std::error_code ec = fileOrErr.getError()) {
-//     llvm::errs() << "Could not open input file: " << ec.message() << "\n";
-//     return -1;
-//   }
-
-//   // Parse the input mlir.
-//   sourceMgr.AddNewSourceBuffer(std::move(*fileOrErr), llvm::SMLoc());
-//   module = mlir::parseSourceFile<mlir::ModuleOp>(sourceMgr, &context);
-//   if (!module) {
-//     llvm::errs() << "Error can't load file " << inputFilename << "\n";
-//     return 3;
-//   }
-//   return 0;
-// }
-
-// int main(int argc, char **argv) {
-//   mlir::MLIRContext context;
-
-//   mlir::OwningOpRef<mlir::ModuleOp> module;
-//   llvm::SourceMgr sourceMgr;
-//   mlir::SourceMgrDiagnosticHandler sourceMgrHandler(sourceMgr, &context);
-//   if (int error = loadMLIR(sourceMgr, context, module))
-//     return error;
-
-//   cl::ParseCommandLineOptions(argc, argv, "pgomlir!\n");
-
-//   mlir::PassManager pm(module.get()->getName());
-//   if (SettledAttrToSCFPass) {
-//     pm.addPass(mlir::pgomlir::createSettledAttrToSCFPass());
-//     module->dump();
-//   }
-//   return 0;
-// }
