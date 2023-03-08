@@ -5,7 +5,14 @@
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 
+#include "Progression.h"
+
 using namespace mlir;
+
+std::string getYieldVerify(Value value);
+std::string getSettledVerify(Value value, llvm::SmallVector<Progression, 2>& KeepRes);
+std::string getSettledVerify(Value value);
+
 
 std::string getYieldVerify(Value value) {
   llvm::errs() << "yiled: " << value << "\n";
@@ -92,6 +99,71 @@ std::string getYieldVerify(Value value) {
   return std::string("unknow");
 }
 
+std::string getSettledVerify(Value value, llvm::SmallVector<Progression, 2>& KeepRes) {
+  llvm::errs() << "not yiled: " << value << "\n";
+  while (auto producer = value.getDefiningOp()) {
+    if (auto cosntantIndexOp =
+            llvm::dyn_cast_or_null<arith::ConstantIndexOp>(producer)) {
+      Progression A;
+      A.setInitialValue(cosntantIndexOp.value());
+      KeepRes.push_back(A);
+      return std::to_string(cosntantIndexOp.value());
+    } else if (auto cosntantIntOp =
+                   llvm::dyn_cast_or_null<arith::ConstantIntOp>(producer)) {
+      return std::to_string(cosntantIntOp.value());
+    } else if (auto constantIndexCastOp =
+                   llvm::dyn_cast_or_null<arith::IndexCastOp>(producer)) {
+      value = constantIndexCastOp.getIn();
+    } else if (auto constantAddIOp =
+                   llvm::dyn_cast_or_null<arith::AddIOp>(producer)) {
+      auto left = constantAddIOp.getLhs();
+      auto right = constantAddIOp.getRhs();
+      return getSettledVerify(left) + "+" + getSettledVerify(right);
+    } else { // TODO: Further we should deal with other binary op like AddFOP
+             // DivOP ...
+      return std::string("unknow");
+    }
+  }
+  if (auto blockArg = value.cast<BlockArgument>()) {
+    std::string parentOp = "";
+    std::string ivExpr = "";
+    std::string iterExpr = "";
+    std::string yiledExpr = "";
+
+    auto posInArg = blockArg.getArgNumber();
+    if (isa<func::FuncOp>(blockArg.getOwner()->getParentOp())) {
+      parentOp = std::string("Func");
+    } else if (isa<scf::ForOp>(blockArg.getOwner()->getParentOp())) {
+      parentOp = std::string("For");
+
+      auto forOp = llvm::dyn_cast_or_null<scf::ForOp>(
+          blockArg.getOwner()->getParentOp());
+        llvm::errs()<<"POS:"<<posInArg<<"\n";
+      if (posInArg != 0) { // If it is in iter_args.
+        auto iterInitValue = forOp.getInitArgs()[posInArg - 1];
+        iterExpr = "(" + getSettledVerify(iterInitValue) + ")";
+        // scf.for binds iter_args with scf.yield, so we must take scf.yield
+        // into consideration.
+        if (auto yieldOpInFor = dyn_cast_or_null<scf::YieldOp>(
+                forOp.getLoopBody().back().getTerminator())) {
+          auto yieledValue = yieldOpInFor.getResults()[posInArg - 1];
+          yiledExpr = "<-yd" + getYieldVerify(yieledValue);
+        }
+      }
+      else{ // If it is induction variable.TODO: iv can be changed by some branches.
+        llvm::errs()<<"iv!"<<"\n";
+        auto ivInitValue = forOp.getLowerBound();
+        ivExpr = "("+ getSettledVerify(ivInitValue)+")";
+      }
+    }
+    return std::string("Index" + parentOp + std::to_string(posInArg) +ivExpr+
+                       iterExpr + yiledExpr);
+  }
+
+  return std::string("unknow");
+}
+
+
 std::string getSettledVerify(Value value) {
   llvm::errs() << "not yiled: " << value << "\n";
   while (auto producer = value.getDefiningOp()) {
@@ -152,5 +224,4 @@ std::string getSettledVerify(Value value) {
 
   return std::string("unknow");
 }
-
 #endif // GET_SETTLED_H
