@@ -10,7 +10,7 @@
 
 #include "pgomlir/Passes/Passes.h"
 #include "pgomlir/Utilities/GetSettledVerify.h"
-#include "pgomlir/Utilities/Progression.h"
+
 
 using namespace mlir;
 using namespace pgomlir;
@@ -49,22 +49,15 @@ TripCountAttrSCFPattern::matchAndRewrite(scf::ForOp forOp,
                                          PatternRewriter &rewriter) const {
   if (forOp->getAttrOfType<StringAttr>("tripCount"))
     return failure();
-  llvm::SmallVector<Progression, 2> KeepRes;
 
   // Firstly assume that bounds for loop are defined well by operations within
   // arith.
-
-
-  std::string upper = getSettledVerify(forOp.getUpperBound(), KeepRes);
-  std::string lower = getSettledVerify(forOp.getLowerBound(), KeepRes);
-  std::string step = getSettledVerify(forOp.getStep(), KeepRes);
-
+  std::string upper = getSettledVerify(forOp.getUpperBound());
+  std::string lower = getSettledVerify(forOp.getLowerBound());
+  std::string step = getSettledVerify(forOp.getStep());
+  // We only take simple loop into consideration
   std::string trip = upper + "," + lower + "," + step;
   auto tripCountAttr = StringAttr::get(forOp.getContext(), trip);
-
-  for(auto keep : KeepRes){
-    llvm::errs()<<keep.getInitialValue()<<"\n";
-  }
 
   rewriter.updateRootInPlace(
       forOp, [&]() { forOp->setAttr("tripCount", tripCountAttr); });
@@ -81,6 +74,7 @@ ComparisonExprAttrSCFPattern::matchAndRewrite(scf::IfOp ifOp,
                                               PatternRewriter &rewriter) const {
   if (ifOp->getAttrOfType<StringAttr>("ifExpr"))
     return failure();
+
   // Deal with CmpFOp ...
   auto cmpIOp = ifOp.getCondition().getDefiningOp<arith::CmpIOp>();
   auto predicate = arith::stringifyEnum(cmpIOp.getPredicate()).str();
