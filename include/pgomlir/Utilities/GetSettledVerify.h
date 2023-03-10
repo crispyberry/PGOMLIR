@@ -48,7 +48,7 @@ std::string getYieldVerify(Value value) {
       std::string expr;
       for (Operation *userOp : condition.getUsers()) {
         if (userOp->getName().getStringRef().str() == "scf.if") {
-          expr = std::string("|Select: if") + " ? " + truevalue + " : " + falsevalue +
+          expr = std::string("|Select if ") + " ? " + truevalue + " : " + falsevalue +
                  "|";
           break;
         } else {
@@ -66,7 +66,7 @@ std::string getYieldVerify(Value value) {
           ifOp.getElseRegion().back().getTerminator());
       auto yieledValue2 = yieldOpInIfElse.getResults()[0];
       std::string elseval = getYieldVerify(yieledValue2);
-      return "|If:" + thenval + ":" + elseval + "|";
+      return "|If " + thenval + ":" + elseval + "|";
 
     } else {
       return std::string("unknow");
