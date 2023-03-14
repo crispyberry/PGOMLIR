@@ -7,9 +7,12 @@
 
 namespace mlir {
 class Pass;
+class RewritePatternSet;
 namespace pgomlir {
 std::unique_ptr<Pass> createSettledAttrToSCFPass();
 std::unique_ptr<Pass> createBranchProbabilityInfoPass();
+void populateSCFToCFConversionPatterns(RewritePatternSet &patterns);
+std::unique_ptr<Pass> createSCFToCFPass();
 } // namespace pgomlir
 } // namespace mlir
 

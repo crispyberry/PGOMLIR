@@ -1,6 +1,7 @@
 add_mlir_dialect_library(MLIRPGOTransforms
   SettledAttrToSCF.cpp
   BranchProbabilityInfo.cpp
+  SCFToCF.cpp
 
   ${PROJECT_SOURCE_DIR}/include/pgomlir/Passes
 
@@ -11,6 +12,7 @@ add_mlir_dialect_library(MLIRPGOTransforms
   MLIRIR
   MLIRSCFDialect
   MLIRArithDialect
+  MLIRControlFlowDialect
   MLIRSupport
   MLIRTransforms
 )

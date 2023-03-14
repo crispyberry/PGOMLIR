@@ -12,4 +12,10 @@ def BranchProbabilityInfoPass : Pass<"branch-prob-info-pass">{
   let summary = "Reasoning branch probability information by settled information";
   let constructor = "mlir::pgomlir::createBranchProbabilityInfoPass()";
 }
+
+def SCFToControlFlow : Pass<"convert-scf-to-cf-with-info"> {
+  let summary = "Convert SCF dialect to ControlFlow dialect with extra information, replacing structured"
+                " control flow with a CFG";
+  let constructor = "mlir::createSCFToCFPass()";
+}
 #endif // PGO_MLIR_PASSES_H

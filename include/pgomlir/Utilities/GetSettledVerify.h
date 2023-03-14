@@ -47,7 +47,7 @@ std::string getYieldVerify(Value value) {
       std::string falsevalue = getYieldVerify(falseOperandValue);
       std::string expr;
       for (Operation *userOp : condition.getUsers()) {
-        if (userOp->getName().getStringRef().str() == "scf.if") {
+        if (userOp->getName().getStringRef().str() == "scf.if") {//TODO: Strengthen constraints. If this scf.if is itself
           expr = std::string("|Select if ") + " ? " + truevalue + " : " + falsevalue +
                  "|";
           break;
@@ -57,10 +57,10 @@ std::string getYieldVerify(Value value) {
         }
       }
       return expr;
-    } else if (auto ifOp = llvm::dyn_cast_or_null<scf::IfOp>(producer)) {
+    } else if (auto ifOp = llvm::dyn_cast_or_null<scf::IfOp>(producer)) {//TODO: Is it possible yielded by another scf.if?
       auto yieldOpInIfThen = dyn_cast_or_null<scf::YieldOp>(
           ifOp.getThenRegion().back().getTerminator());
-      auto yieledValue1 = yieldOpInIfThen.getResults()[0];
+      auto yieledValue1 = yieldOpInIfThen.getResults()[0];//if(auto... value = this if yiled )?
       std::string thenval = " if ? " + getYieldVerify(yieledValue1);
       auto yieldOpInIfElse = dyn_cast_or_null<scf::YieldOp>(
           ifOp.getElseRegion().back().getTerminator());

@@ -38,6 +38,10 @@ static cl::opt<bool>
     BranchProbabilityInfoPass("branch-prob-info-pass", cl::init(true),
                        cl::desc("Turn on branch-prob-info-pass"));
 
+static cl::opt<bool>
+    SCFToCFPass("scf-to-cf", cl::init(true),
+                       cl::desc("SCF to CF with extra information"));                       
+
 int main(int argc, char **argv) {
   // Register all MLIR dialects and passes.
 
@@ -91,6 +95,15 @@ int main(int argc, char **argv) {
     pm.addPass(mlir::pgomlir::createSettledAttrToSCFPass());
     pm.addPass(mlir::pgomlir::createBranchProbabilityInfoPass());
 
+    if (failed(pm.run(*module))) {
+      llvm::errs() << "Error running pass\n";
+      return 1;
+    }
+  }
+
+  if(SCFToCFPass){
+    pm.addPass(mlir::pgomlir::createSCFToCFPass());
+    
     if (failed(pm.run(*module))) {
       llvm::errs() << "Error running pass\n";
       return 1;
