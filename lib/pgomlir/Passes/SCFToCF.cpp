@@ -340,13 +340,17 @@ LogicalResult ForLowering::matchAndRewrite(ForOp forOp,
   destOperands.push_back(lowerBound);
   auto iterOperands = forOp.getIterOperands();
   destOperands.append(iterOperands.begin(), iterOperands.end());
-  rewriter.create<cf::BranchOp>(loc, conditionBlock, destOperands);
+
+  auto branchOp = rewriter.create<cf::BranchOp>(loc, conditionBlock, destOperands);
+  auto blockAttr = (*forOp).getAttrOfType<StringAttr>("tripCount");
+  Attribute attr = blockAttr.cast<Attribute>();
+  (*branchOp).setAttr("tripCount", attr);
 
   // With the body block done, we can fill in the condition block.
   rewriter.setInsertionPointToEnd(conditionBlock);
   auto comparison = rewriter.create<arith::CmpIOp>(
       loc, arith::CmpIPredicate::slt, iv, upperBound);
-
+  
   rewriter.create<cf::CondBranchOp>(loc, comparison, firstBodyBlock,
                                     ArrayRef<Value>(), endBlock,
                                     ArrayRef<Value>());
