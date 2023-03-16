@@ -11,8 +11,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "pgomlir/Passes/Passes.h"
 #include "PassDetails.h"
+#include "pgomlir/Passes/Passes.h"
 
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/ControlFlow/IR/ControlFlowOps.h"
@@ -31,8 +31,7 @@ using namespace pgomlir;
 
 namespace {
 
-struct SCFToCFPass
-    : public PassWrapper<SCFToCFPass, OperationPass<>> {
+struct SCFToCFPass : public PassWrapper<SCFToCFPass, OperationPass<>> {
   void runOnOperation() override;
 };
 
@@ -324,7 +323,12 @@ LogicalResult ForLowering::matchAndRewrite(ForOp forOp,
   SmallVector<Value, 8> loopCarried;
   loopCarried.push_back(stepped);
   loopCarried.append(terminator->operand_begin(), terminator->operand_end());
-  rewriter.create<cf::BranchOp>(loc, conditionBlock, loopCarried);
+  auto lastBranchOp =
+      rewriter.create<cf::BranchOp>(loc, conditionBlock, loopCarried);
+  if (auto blockAttr = (*forOp).getAttrOfType<StringAttr>("tripCount")) {
+    Attribute attr = blockAttr.cast<Attribute>();
+    (*lastBranchOp).setAttr("loop", attr);
+  }
   rewriter.eraseOp(terminator);
 
   // Compute loop bounds before branching to the condition.
@@ -341,16 +345,16 @@ LogicalResult ForLowering::matchAndRewrite(ForOp forOp,
   auto iterOperands = forOp.getIterOperands();
   destOperands.append(iterOperands.begin(), iterOperands.end());
 
-  auto branchOp = rewriter.create<cf::BranchOp>(loc, conditionBlock, destOperands);
-  auto blockAttr = (*forOp).getAttrOfType<StringAttr>("tripCount");
-  Attribute attr = blockAttr.cast<Attribute>();
-  (*branchOp).setAttr("tripCount", attr);
-
+  auto initBranchOp =
+      rewriter.create<cf::BranchOp>(loc, conditionBlock, destOperands);
+  if (auto blockAttr = (*forOp).getAttrOfType<StringAttr>("tripCount")) {
+    (*initBranchOp).setAttr("loop", attr);
+  }
   // With the body block done, we can fill in the condition block.
   rewriter.setInsertionPointToEnd(conditionBlock);
   auto comparison = rewriter.create<arith::CmpIOp>(
       loc, arith::CmpIPredicate::slt, iv, upperBound);
-  
+
   rewriter.create<cf::CondBranchOp>(loc, comparison, firstBodyBlock,
                                     ArrayRef<Value>(), endBlock,
                                     ArrayRef<Value>());
@@ -371,6 +375,7 @@ LogicalResult IfLowering::matchAndRewrite(IfOp ifOp,
   auto opPosition = rewriter.getInsertionPoint();
   auto *remainingOpsBlock = rewriter.splitBlock(condBlock, opPosition);
   Block *continueBlock;
+
   if (ifOp.getNumResults() == 0) {
     continueBlock = remainingOpsBlock;
   } else {
@@ -407,10 +412,14 @@ LogicalResult IfLowering::matchAndRewrite(IfOp ifOp,
   }
 
   rewriter.setInsertionPointToEnd(condBlock);
-  rewriter.create<cf::CondBranchOp>(loc, ifOp.getCondition(), thenBlock,
-                                    /*trueArgs=*/ArrayRef<Value>(), elseBlock,
-                                    /*falseArgs=*/ArrayRef<Value>());
-
+  auto conBranchOp = rewriter.create<cf::CondBranchOp>(
+      loc, ifOp.getCondition(), thenBlock,
+      /*trueArgs=*/ArrayRef<Value>(), elseBlock,
+      /*falseArgs=*/ArrayRef<Value>());
+  if (auto blockAttr = (*ifOp).getAttrOfType<StringAttr>("ifExpr")) {
+    Attribute attr = blockAttr.cast<Attribute>();
+    (*conBranchOp).setAttr("ifExpr", attr);
+  }
   // Ok, we're done!
   rewriter.replaceOp(ifOp, continueBlock->getArguments());
   return success();
