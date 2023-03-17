@@ -348,6 +348,7 @@ LogicalResult ForLowering::matchAndRewrite(ForOp forOp,
   auto initBranchOp =
       rewriter.create<cf::BranchOp>(loc, conditionBlock, destOperands);
   if (auto blockAttr = (*forOp).getAttrOfType<StringAttr>("tripCount")) {
+    Attribute attr = blockAttr.cast<Attribute>();
     (*initBranchOp).setAttr("loop", attr);
   }
   // With the body block done, we can fill in the condition block.

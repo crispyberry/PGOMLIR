@@ -31,16 +31,24 @@ static cl::opt<std::string> outputFilename("o",
                                            llvm::cl::value_desc("filename"),
                                            llvm::cl::init("-"));
 static cl::opt<bool>
-    SettledAttrToSCFPass("settled-attr-to-scf-pass", cl::init(true),
-                       cl::desc("Turn on settled-attr-to-scf-pass"));
+    SettledAttrToSCFPass("settled-attr-to-scf-pass", cl::init(false),
+                         cl::desc("Turn on settled-attr-to-scf-pass"));
 
 static cl::opt<bool>
-    BranchProbabilityInfoPass("branch-prob-info-pass", cl::init(true),
-                       cl::desc("Turn on branch-prob-info-pass"));
+    BranchProbabilityInfoPass("branch-prob-info-pass", cl::init(false),
+                              cl::desc("Turn on branch-prob-info-pass"));
+
+static cl::opt<bool> SCFToCFPass("scf-to-cf", cl::init(false),
+                                 cl::desc("SCF to CF with extra information"));
 
 static cl::opt<bool>
-    SCFToCFPass("scf-to-cf", cl::init(true),
-                       cl::desc("SCF to CF with extra information"));                       
+    CFToLLVMWithAttrPass("cf-to-llvm-with-attr", cl::init(false),
+                         cl::desc("CF to LLVM with extra information"));
+
+static cl::opt<bool> ConvertFuncToLLVMPass(
+    "convert-func-to-llvm",
+    cl::desc("Convert a function to LLVM IR format using MLIR"),
+    cl::init(false));
 
 int main(int argc, char **argv) {
   // Register all MLIR dialects and passes.
@@ -91,7 +99,7 @@ int main(int argc, char **argv) {
     }
   }
 
-  if(BranchProbabilityInfoPass){
+  if (BranchProbabilityInfoPass) {
     pm.addPass(mlir::pgomlir::createSettledAttrToSCFPass());
     pm.addPass(mlir::pgomlir::createBranchProbabilityInfoPass());
 
@@ -101,9 +109,25 @@ int main(int argc, char **argv) {
     }
   }
 
-  if(SCFToCFPass){
+  if (SCFToCFPass) {
     pm.addPass(mlir::pgomlir::createSCFToCFPass());
-    
+
+    if (failed(pm.run(*module))) {
+      llvm::errs() << "Error running pass\n";
+      return 1;
+    }
+  }
+  if (CFToLLVMWithAttrPass) {
+    pm.addPass(mlir::pgomlir::createCFToLLVMWithAttrPass());
+
+    if (failed(pm.run(*module))) {
+      llvm::errs() << "Error running pass\n";
+      return 1;
+    }
+  }
+  if (ConvertFuncToLLVMPass) {
+    pm.addPass(mlir::createConvertFuncToLLVMPass());
+
     if (failed(pm.run(*module))) {
       llvm::errs() << "Error running pass\n";
       return 1;
