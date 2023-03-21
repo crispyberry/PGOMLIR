@@ -50,6 +50,17 @@ static cl::opt<bool> ConvertFuncToLLVMPass(
     cl::desc("Convert a function to LLVM IR format using MLIR"),
     cl::init(false));
 
+static cl::opt<bool> ConvertSCFToLLVMWithAttr(
+  "convert-scf-to-llvm-with-attr",
+    cl::desc("Convert SCF to LLVM IR format with attribute using MLIR"),
+    cl::init(false));
+
+static cl::opt<bool> AddMetadataToBlocksPass(
+  "add-attr-as-metadata-to-blocks",
+    cl::desc("Add attribute in loop region as llvm.metadata"),
+    cl::init(false));
+
+
 int main(int argc, char **argv) {
   // Register all MLIR dialects and passes.
 
@@ -133,6 +144,25 @@ int main(int argc, char **argv) {
       return 1;
     }
   }
+  if(ConvertSCFToLLVMWithAttr){
+    pm.addPass(mlir::pgomlir::createSettledAttrToSCFPass());
+    pm.addPass(mlir::pgomlir::createSCFToCFPass());
+    pm.addPass(mlir::createConvertFuncToLLVMPass());
+    //pm.addPass(mlir::pgomlir::createAddMetadataToBlocksPass());
+    if (failed(pm.run(*module))) {
+      llvm::errs() << "Error running pass\n";
+      return 1;
+    }
+  }
+  if(AddMetadataToBlocksPass){
+    llvm::errs()<<"Metad\n";
+    pm.addPass(mlir::pgomlir::createAddMetadataToBlocksPass());
+    if (failed(pm.run(*module))) {
+      llvm::errs() << "Error running pass\n";
+      return 1;
+    }
+  }
+
   // Write the output file.
   std::error_code error;
   llvm::raw_fd_ostream output(outputFilename, error, llvm::sys::fs::OF_Text);

@@ -3,6 +3,7 @@ add_mlir_dialect_library(MLIRPGOTransforms
   BranchProbabilityInfo.cpp
   SCFToCF.cpp
   CFToLLVMWithAttr.cpp
+  AddMetadataToBlocks.cpp
 
   ${PROJECT_SOURCE_DIR}/include/pgomlir/Passes
 
